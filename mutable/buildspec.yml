@@ -1,0 +1,21 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_REGION: "REGION"
+    AWS_ACCOUNT_ID: "ACCOUNT_ID"
+    ECR_REPO_NAME: "ECR_REPO_NAME"
+
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+  build:
+    commands:
+      - docker build -t $ECR_REPO_NAME .
+      - docker tag $ECR_REPO_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:latest
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:latest
+      - echo "{\"ImageURI\":\"${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest\"}" > imagedefinitions.json
+artifacts:
+  files:
+    - imagedefinitions.json
